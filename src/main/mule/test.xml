@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="testFlow" doc:id="280d649a-65af-4b4b-b180-892ea3f23ecc" initialState="stopped">
+		<scheduler doc:name="Scheduler" doc:id="276e921c-ddf6-47ca-8133-d8344eb74ef1" >
+			<scheduling-strategy >
+				<fixed-frequency />
+			</scheduling-strategy>
+		</scheduler>
+		<logger level="INFO" doc:name="Logger" doc:id="fe9bb3c2-7c92-4be3-b61d-2a6f0f8d7ca7" />
+		<ee:transform doc:name="to text" doc:id="33a9a4c8-e814-4ff3-98c0-c4cc228dfd84">
+			<ee:message>
+				<ee:set-payload><![CDATA[output text/plain
+
+var json_object = {
+  "id": "1234",
+  "codes": "0068,0073,0088,0089,TBC1,C001,C002"
+}
+---
+write(json_object,"application/json")]]></ee:set-payload>
+			</ee:message>
+			<ee:variables />
+		</ee:transform>
+		<ee:transform doc:name="to csv" doc:id="7bec28a2-2433-4de2-94ce-a2cc86b9000c">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/csv quoteValues=true
+---
+read(payload, "application/json")]]></ee:set-payload>
+			</ee:message>
+			<ee:variables>
+			</ee:variables>
+		</ee:transform>
+		<ee:transform doc:name="to binary" doc:id="17966abf-fb99-41a0-86ca-f06b97b5919b">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/x-binary
+---
+write(payload,"application/csv")]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<set-payload value="#[%dw 2.0
+import * from dw::core::Binaries
+output application/json
+---
+toBase64(payload)]" doc:name="to base64" doc:id="600cfb82-0e59-49a9-aa30-feb453edd25d" />
+		<ee:transform doc:name="output" doc:id="69cf6bd9-0163-4d9a-8149-5e991f29f5c6">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="testFlow1" doc:id="f757ba50-5756-4620-914a-1b485676ca87" initialState="stopped">
+		<scheduler doc:name="Scheduler" doc:id="21a1d1d8-4bc5-42b9-bdea-72c23022ae14" >
+			<scheduling-strategy >
+				<fixed-frequency />
+			</scheduling-strategy>
+		</scheduler>
+		<ee:transform doc:name="to text" doc:id="e967a7b8-dacd-430d-85c1-e48ebdbfe819">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    "message": "Hello world!",
+    "fileType":"CSV"
+}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables>
+			</ee:variables>
+		</ee:transform>
+		<ee:transform doc:name="to csv" doc:id="b76226d7-5882-4f8d-a950-5f79deaa0736" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/csv quoteValues=true
+---
+read(payload, "application/json")]]></ee:set-payload>
+			</ee:message>
+			<ee:variables />
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="8060e1b4-b9b6-4d28-92b8-808868525850" />
+	</flow>
+
+</mule>

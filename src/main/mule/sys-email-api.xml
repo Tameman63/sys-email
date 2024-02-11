@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:tls="http://www.mulesoft.org/schema/mule/tls"
+	xmlns:email="http://www.mulesoft.org/schema/mule/email" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/current/mule-email.xsd
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<email:smtp-config name="Email_SMTP" doc:name="Email SMTP" doc:id="fdaa423a-d66a-4cfc-8eb8-a8ecacaf9c54" >
+		<email:smtps-connection host="smtp.gmail.com" user="tamebele38@gmail.com" password="wmwn oobb mkrf gwxb" >
+			<tls:context >
+				<tls:trust-store insecure="true" />
+			</tls:context>
+		</email:smtps-connection>
+	</email:smtp-config>
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="3428e751-0278-43f7-a352-be620363547a" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<flow name="sys-email-apiFlow" doc:id="f550274b-84e4-406c-80f6-5ae45aec4479" >
+		<http:listener doc:name="Listener" doc:id="3f52e7d1-7c53-497e-9b3c-daa37a6d573a" path="/send" config-ref="HTTP_Listener_config"/>
+		<logger level="INFO" doc:name="Start Logger" doc:id="3668b494-ee89-4b48-93c0-0f566738f437" message="Start......."/>
+<!-- [STUDIO:"to text"]		<ee:transform doc:name="to text" doc:id="663988e5-5520-4478-8c1f-58232fb43d97">
+			<ee:message>
+				<ee:set-payload><![CDATA[output text/plain
+
+var json_object = [{
+  "ObjectName": "Opportunity",
+  "transactionId": "0068-5638-f45g-399m",
+  "failure reason":"bad payload",
+  "statusCode":"500"
+},
+{
+  "ObjectName": "Case",
+  "transactionId": "0068-5638-f45g-399m",
+  "failure reason":"bad payload",
+  "statusCode":"500"
+},
+{
+  "ObjectName": "Opportunity",
+  "transactionId": "0068-5638-f45g-399m",
+  "failure reason":"bad payload",
+  "statusCode":"500"
+}]
+&#45;&#45;-
+write(json_object,"application/json")]]></ee:set-payload>
+			</ee:message>
+			<ee:variables />
+		</ee:transform> [STUDIO] -->
+		<ee:transform doc:name="to csv" doc:id="ccb49a5a-0212-4fe3-9c20-f9d0a7f0532c">
+			<ee:message>
+				<ee:set-payload><![CDATA[output application/csv
+
+var json_object = [{
+  "ObjectName": "Opportunity",
+  "transactionId": "0068-5638-f45g-399m",
+  "failure reason":"bad payload",
+  "statusCode":"500"
+},
+{
+  "ObjectName": "Case",
+  "transactionId": "0068-5638-f45g-399m",
+  "failure reason":"bad payload",
+  "statusCode":"500"
+},
+{
+  "ObjectName": "Opportunity",
+  "transactionId": "0068-5638-f45g-399m",
+  "failure reason":"bad payload",
+  "statusCode":"500"
+}]
+
+---
+json_object]]></ee:set-payload>
+			</ee:message>
+			<ee:variables>
+			</ee:variables>
+		</ee:transform>
+		<ee:transform doc:name="to binary" doc:id="6d554ef1-062a-4c47-8511-474e66986f29">
+			<ee:message>
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/x-binary
+---
+write(payload,"application/csv")]]></ee:set-payload>
+			
+</ee:message>
+		</ee:transform>
+		<set-variable value="#[%dw 2.0&#10;import * from dw::core::Binaries&#10;output application/json&#10;---&#10;toBase64(payload)]" doc:name="Set Variable" doc:id="313ea773-4d00-47fe-9000-fe64ff34692d" variableName="base64"/>
+		<ee:transform doc:name="Email Message" doc:id="58802545-afec-4774-b83e-eaec752e3fba" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+	"email": ["tamemule63@gmail.com"],
+	"subject": "this is a test email",
+	"content": "this is Email Integration text Email",
+	"attachment": [{
+		"filename": "test.csv",
+		"FileContent":vars.base64
+	}]
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<ee:transform doc:name="Transform Message" doc:id="e28ac0a2-ea65-4d0e-b627-74dfc2fa50e3" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="attachment" ><![CDATA[%dw 2.0
+output application/java
+import fromBase64 from dw::core::Binaries
+---
+{
+	(payload.attachment map() -> {
+		($.filename): fromBase64($.FileContent)
+	})
+}]]></ee:set-variable>
+			
+</ee:variables>
+		</ee:transform>
+		<email:send doc:name="Send" doc:id="8afe7631-993d-433b-b92c-54be4f367578" config-ref="Email_SMTP" fromAddress="tamemule63@gmail.com" toAddresses="#[payload.email]" subject="#[payload.subject]">
+			<email:cc-addresses >
+				<email:cc-address value="sammygref@gmail.com" />
+			</email:cc-addresses>
+			<email:body contentType="text/html" encoding="UTF-8" >
+				<email:content ><![CDATA[#[payload.content]]]></email:content>
+			</email:body>
+			<email:attachments ><![CDATA[#[vars.attachment]]]></email:attachments>
+		</email:send>
+		<ee:transform doc:name="Transform Message" doc:id="b84f67ce-beb5-47df-a766-62a54344d41f" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	status:"OK"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>
